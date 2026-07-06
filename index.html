@@ -52,7 +52,7 @@
     <div class="container">
       <div class="hero-content">
         <div class="hero-badge">🎄 Edição Limitada 2026</div>
-        <h1 class="hero-title"><em>Feito com <strong>afeto </strong> saboreado com</em> <strong>amor</strong>.</h1>
+        <h1 class="hero-title">Feito com <strong>afeto</strong>, saboreado com <strong>amor</strong>.</h1>
         <p class="hero-subtitle">Descubra a magia da nossa fermentação natural, ingredientes selecionados e receitas
           artesanais passadas de geração em geração.</p>
         <p class="hero-tagline">◆ Tradição, afeto e sabor premium ◆</p>
@@ -118,8 +118,8 @@
   <section class="section featured" id="destaque">
     <div class="container">
       <div class="featured-content animate-on-scroll">
-        <div class="featured-image">
-          <img src="img/SuperChocolate.png" id="imgdest" alt="SuperChocolate Premium">
+        <div class="featured-image" id="imgdest">
+          <img src="img/SuperChocolate.png" alt="SuperChocolate Premium">
         </div>
         <div class="featured-text">
           <span class="section-label">A Joia da Coroa</span>
@@ -154,8 +154,8 @@
       <div class="footer-links">
         <a href="#inicio">Início</a>
         <a href="#sabores">Catálogo</a>
-        <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Instagram</a>
-        <a href="https://api.whatsapp.com/send/?phone=5561995238383">WhatsApp</a>
+        <a href="#">Instagram</a>
+        <a href="#">WhatsApp</a>
       </div>
       <div class="footer-divider"></div>
       <div class="footer-bottom">
@@ -163,6 +163,36 @@
       </div>
     </div>
   </footer>
+
+  <!-- Product Details Modal (Flyer) -->
+  <div class="product-modal-overlay" id="product-modal-overlay">
+    <div class="product-modal-content" id="product-modal-content" onclick="event.stopPropagation();">
+      <button class="modal-close-btn" id="modal-close-btn" aria-label="Fechar Detalhes">×</button>
+      
+      <div class="modal-image-container">
+        <img src="" alt="" id="modal-img">
+      </div>
+      
+      <div class="modal-details">
+        <div>
+          <span class="modal-tag" id="modal-tag" style="display: none;"></span>
+          <h3 class="modal-title" id="modal-title">Título</h3>
+        </div>
+        
+        <div class="modal-section">
+          <h4>A Nossa História</h4>
+          <p id="modal-story">História do produto vai aqui.</p>
+        </div>
+        
+        <div class="modal-section">
+          <h4>Ingredientes Selecionados</h4>
+          <ul class="modal-ingredients-list" id="modal-ingredients">
+            <!-- Ingredientes listados via JS -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
@@ -177,11 +207,10 @@
         tag: 'Mais Vendido',
         tagClass: 'bestseller',
         description: 'Massa super leve com generosas gotas de chocolate ao leite belga, um clássico indispensável.',
+        story: 'Nascido da vontade de recriar as memórias das antigas docerias europeias. Cada fornada leva mais de 48 horas de fermentação natural, garantindo aquela massa que desfia como algodão e derrete na boca com as generosas gotas de chocolate belga.',
+        ingredients: ['Massa madre de fermentação longa', 'Gotas de chocolate belga 54%', 'Manteiga artesanal extra-fina', 'Gemas caipiras frescas', 'Extrato natural de baunilha de Madagascar'],
         prices: {
-          '100g': 24.90,
-          '250g': 49.90,
-          '300g': 59.90,
-          '400g': 74.90
+          '100g': 24.90, '250g': 49.90, '300g': 59.90, '400g': 74.90
         }
       },
       {
@@ -191,11 +220,10 @@
         tag: 'Exclusivo',
         tagClass: 'premium',
         description: 'Recheado com autêntico creme de pistache italiano e cobertura de chocolate branco com pedaços torrados.',
+        story: 'O auge da sofisticação da Panettoneria Julieta. Uma homenagem à tradição da região da Sicília, na Itália, onde os melhores pistaches do mundo são colhidos. Criamos um recheio extremamente aveludado e equilibrado, que contrasta perfeitamente com a crocância da nossa cobertura exclusiva.',
+        ingredients: ['Creme artesanal de Pistache di Bronte DOP', 'Cobertura de chocolate branco belga', 'Pistaches torrados da Sicília', 'Farinha de trigo tipo 00 italiana', 'Manteiga de fermentação lenta'],
         prices: {
-          '100g': 29.90,
-          '250g': 59.90,
-          '300g': 69.90,
-          '400g': 89.90
+          '100g': 29.90, '250g': 59.90, '300g': 69.90, '400g': 89.90
         }
       },
       {
@@ -205,11 +233,10 @@
         tag: '',
         tagClass: '',
         description: 'A receita milanesa perfeita, com Caramelo Salgado e enfeitado com Ouro Branco.',
+        story: 'A combinação ousada que conquistou corações. Uma verdadeira dança entre o doce e o salgado. Preparamos o nosso caramelo lentamente em tachos de cobre e finalizamos com delicadas escamas de sal marinho, proporcionando explosões de sabor a cada mordida.',
+        ingredients: ['Caramelo artesanal em tacho de cobre', 'Flocos de Sal Marinho (Flor de Sal)', 'Chocolate Ouro Branco', 'Manteiga de cacau 100% pura', 'Essência de caramelo tostado'],
         prices: {
-          '100g': 19.90,
-          '250g': 39.90,
-          '300g': 49.90,
-          '400g': 64.90
+          '100g': 19.90, '250g': 39.90, '300g': 49.90, '400g': 64.90
         }
       },
       {
@@ -219,11 +246,10 @@
         tag: 'Tradição',
         tagClass: 'new',
         description: 'O sabor inconfundível do Natal com frutas cristalizadas artesanalmente e uvas passas selecionadas.',
+        story: 'Um tributo às nossas raízes e à verdadeira essência do Natal. Não usamos frutas industriais; nós mesmos cristalizamos lentamente laranjas e cidras em nossa cozinha, preservando os óleos essenciais que perfumam toda a casa ao abrir a embalagem.',
+        ingredients: ['Cascas de laranja e cidra cristalizadas na casa', 'Uvas passas turcas umedecidas em rum', 'Açúcar cristal orgânico', 'Gemas caipiras selecionadas', 'Raspas de limão siciliano fresco'],
         prices: {
-          '100g': 18.90,
-          '250g': 34.90,
-          '300g': 44.90,
-          '400g': 59.90
+          '100g': 18.90, '250g': 34.90, '300g': 44.90, '400g': 59.90
         }
       },
       {
@@ -233,11 +259,10 @@
         tag: 'Premium',
         tagClass: 'premium',
         description: 'Massa de cacau, recheio intenso de trufa e uma cobertura espetacular de chocolate amargo crocante.',
+        story: 'Nossa "Joia da Coroa". Desenvolvido para os verdadeiros aficionados por chocolate. Substituímos parte da farinha por cacau 100% alcalino na massa, recheamos com trufa intensa e banhamos com chocolate amargo, garantindo que seja uma experiência sensorial indescritível.',
+        ingredients: ['Blend exclusivo de cacau 70% amazônico', 'Recheio trufado meio amargo', 'Massa de fermentação natural de cacau', 'Nibs de cacau crocantes', 'Manteiga de fermentação europeia'],
         prices: {
-          '100g': 29.90,
-          '250g': 59.90,
-          '300g': 69.90,
-          '400g': 84.90
+          '100g': 29.90, '250g': 59.90, '300g': 69.90, '400g': 84.90
         }
       }
     ];
@@ -265,7 +290,7 @@
 
         html += `
           <div class="product-card animate-on-scroll" id="card-${product.id}">
-            <div class="product-image-wrapper">
+            <div class="product-image-wrapper" onclick="openProductFlyer('${product.id}')" style="cursor: pointer;" title="Clique para ver a história e os ingredientes">
               <img src="${product.image}" alt="${product.name}">
               ${product.tag ? `<span class="product-tag ${product.tagClass}">${product.tag}</span>` : ''}
             </div>
@@ -350,11 +375,56 @@
       badge.classList.add('pop');
     };
 
+    // --- Product Modal Logic ---
+    const productModalOverlay = document.getElementById('product-modal-overlay');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
+
+    window.openProductFlyer = (productId) => {
+      const product = productsData.find(p => p.id === productId);
+      if (!product) return;
+
+      document.getElementById('modal-img').src = product.image;
+      document.getElementById('modal-img').alt = product.name;
+      document.getElementById('modal-title').textContent = product.name;
+      document.getElementById('modal-story').textContent = product.story;
+      
+      const tagEl = document.getElementById('modal-tag');
+      if (product.tag) {
+        tagEl.textContent = product.tag;
+        tagEl.className = 'modal-tag ' + product.tagClass;
+        tagEl.style.display = 'inline-block';
+      } else {
+        tagEl.style.display = 'none';
+      }
+
+      const ingredientsHtml = product.ingredients.map(ing => `<li>${ing}</li>`).join('');
+      document.getElementById('modal-ingredients').innerHTML = ingredientsHtml;
+
+      productModalOverlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+
+    const closeProductFlyer = () => {
+      productModalOverlay.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    if (modalCloseBtn && productModalOverlay) {
+      modalCloseBtn.addEventListener('click', closeProductFlyer);
+      productModalOverlay.addEventListener('click', closeProductFlyer);
+    }
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && productModalOverlay && productModalOverlay.classList.contains('open')) {
+        closeProductFlyer();
+      }
+    });
+
     // --- Cart Badge Update ---
     const updateCartBadge = () => {
       const badge = document.getElementById('cart-badge');
       const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-      
+
       if (totalItems > 0) {
         badge.textContent = totalItems;
         badge.style.display = 'flex';
