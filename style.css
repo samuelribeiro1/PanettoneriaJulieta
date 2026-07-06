@@ -273,6 +273,10 @@ select {
   transform: translateY(0);
 }
 
+#imgdest:hover {
+  max-width: 50%;
+}
+
 /* ---------- Navbar ---------- */
 .navbar {
   position: fixed;
