@@ -274,7 +274,8 @@ select {
 }
 
 #imgdest:hover {
-  max-width: 50%;
+  transform: scale(1.3);
+  transition: opacity 0.8s ease, transform 0.8s ease;
 }
 
 /* ---------- Navbar ---------- */
