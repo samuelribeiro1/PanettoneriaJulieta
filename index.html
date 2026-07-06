@@ -164,31 +164,24 @@
     </div>
   </footer>
 
-  <!-- Product Details Modal (Flyer) -->
-  <div class="product-modal-overlay" id="product-modal-overlay">
-    <div class="product-modal-content" id="product-modal-content" onclick="event.stopPropagation();">
-      <button class="modal-close-btn" id="modal-close-btn" aria-label="Fechar Detalhes">×</button>
-      
-      <div class="modal-image-container">
-        <img src="" alt="" id="modal-img">
+
+  <!-- Product Flyer -->
+  <div class="flyer-overlay" id="flyer-overlay" onclick="closeFlyer()">
+    <div class="flyer" id="flyer" onclick="event.stopPropagation()">
+      <button class="flyer-close" onclick="closeFlyer()">×</button>
+      <div class="flyer-img">
+        <img id="flyer-img" src="" alt="">
       </div>
-      
-      <div class="modal-details">
-        <div>
-          <span class="modal-tag" id="modal-tag" style="display: none;"></span>
-          <h3 class="modal-title" id="modal-title">Título</h3>
+      <div class="flyer-text" id="flyer-text">
+        <span class="flyer-tag" id="flyer-tag"></span>
+        <h3 class="flyer-title" id="flyer-title"></h3>
+        <div class="flyer-section">
+          <h4>🌿 A Nossa História</h4>
+          <p id="flyer-story"></p>
         </div>
-        
-        <div class="modal-section">
-          <h4>A Nossa História</h4>
-          <p id="modal-story">História do produto vai aqui.</p>
-        </div>
-        
-        <div class="modal-section">
-          <h4>Ingredientes Selecionados</h4>
-          <ul class="modal-ingredients-list" id="modal-ingredients">
-            <!-- Ingredientes listados via JS -->
-          </ul>
+        <div class="flyer-section">
+          <h4>✨ Ingredientes Selecionados</h4>
+          <ul id="flyer-ingredients"></ul>
         </div>
       </div>
     </div>
@@ -290,7 +283,7 @@
 
         html += `
           <div class="product-card animate-on-scroll" id="card-${product.id}">
-            <div class="product-image-wrapper" onclick="openProductFlyer('${product.id}')" style="cursor: pointer;" title="Clique para ver a história e os ingredientes">
+            <div class="product-image-wrapper" onclick="openFlyer('${product.id}')" style="cursor:pointer" title="Ver detalhes">
               <img src="${product.image}" alt="${product.name}">
               ${product.tag ? `<span class="product-tag ${product.tagClass}">${product.tag}</span>` : ''}
             </div>
@@ -375,49 +368,59 @@
       badge.classList.add('pop');
     };
 
-    // --- Product Modal Logic ---
-    const productModalOverlay = document.getElementById('product-modal-overlay');
-    const modalCloseBtn = document.getElementById('modal-close-btn');
+    // --- Product Flyer ---
+    let flyerTimer = null;
 
-    window.openProductFlyer = (productId) => {
-      const product = productsData.find(p => p.id === productId);
-      if (!product) return;
+    window.openFlyer = (id) => {
+      const p = productsData.find(x => x.id === id);
+      if (!p) return;
 
-      document.getElementById('modal-img').src = product.image;
-      document.getElementById('modal-img').alt = product.name;
-      document.getElementById('modal-title').textContent = product.name;
-      document.getElementById('modal-story').textContent = product.story;
-      
-      const tagEl = document.getElementById('modal-tag');
-      if (product.tag) {
-        tagEl.textContent = product.tag;
-        tagEl.className = 'modal-tag ' + product.tagClass;
+      // Fill content
+      document.getElementById('flyer-img').src = p.image;
+      document.getElementById('flyer-img').alt = p.name;
+      document.getElementById('flyer-title').textContent = p.name;
+      document.getElementById('flyer-story').textContent = p.story;
+
+      const tagEl = document.getElementById('flyer-tag');
+      if (p.tag) {
+        tagEl.textContent = p.tag;
+        tagEl.className = 'flyer-tag ' + p.tagClass;
         tagEl.style.display = 'inline-block';
       } else {
         tagEl.style.display = 'none';
       }
 
-      const ingredientsHtml = product.ingredients.map(ing => `<li>${ing}</li>`).join('');
-      document.getElementById('modal-ingredients').innerHTML = ingredientsHtml;
+      document.getElementById('flyer-ingredients').innerHTML =
+        p.ingredients.map(i => `<li>${i}</li>`).join('');
 
-      productModalOverlay.classList.add('open');
+      // Step 1: Show overlay with image only (full)
+      const overlay = document.getElementById('flyer-overlay');
+      const flyer = document.getElementById('flyer');
+      const textEl = document.getElementById('flyer-text');
+
+      flyer.classList.remove('reveal');
+      textEl.classList.remove('show');
+
+      overlay.classList.add('open');
       document.body.style.overflow = 'hidden';
+
+      // Step 2: After 2.5s, slide image left and fade in text
+      if (flyerTimer) clearTimeout(flyerTimer);
+      flyerTimer = setTimeout(() => {
+        flyer.classList.add('reveal');
+        setTimeout(() => textEl.classList.add('show'), 100);
+        flyerTimer = null;
+      }, 2500);
     };
 
-    const closeProductFlyer = () => {
-      productModalOverlay.classList.remove('open');
+    window.closeFlyer = () => {
+      if (flyerTimer) { clearTimeout(flyerTimer); flyerTimer = null; }
+      document.getElementById('flyer-overlay').classList.remove('open');
       document.body.style.overflow = '';
     };
 
-    if (modalCloseBtn && productModalOverlay) {
-      modalCloseBtn.addEventListener('click', closeProductFlyer);
-      productModalOverlay.addEventListener('click', closeProductFlyer);
-    }
-    
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && productModalOverlay && productModalOverlay.classList.contains('open')) {
-        closeProductFlyer();
-      }
+      if (e.key === 'Escape') closeFlyer();
     });
 
     // --- Cart Badge Update ---
