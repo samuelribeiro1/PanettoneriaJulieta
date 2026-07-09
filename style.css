@@ -1211,6 +1211,28 @@ select {
   opacity: 0.7;
 }
 
+.btn-print-comanda {
+  background: linear-gradient(135deg, var(--color-bordo), var(--color-bordo-dark));
+  box-shadow: 0 4px 20px rgba(94, 18, 36, 0.3);
+  margin-top: var(--space-sm);
+}
+
+.btn-print-comanda:hover {
+  box-shadow: 0 8px 30px rgba(94, 18, 36, 0.5);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--space-md);
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
 /* ---------- Toast Notification ---------- */
 .toast-container {
   position: fixed;

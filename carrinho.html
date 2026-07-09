@@ -8,6 +8,11 @@
   <title>Finalizar Pedido | Panettoneria Julieta</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="3.png" type="image/x-icon">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
 </head>
 
 <body class="checkout-page">
@@ -64,6 +69,49 @@
               </div>
             </form>
           </div>
+
+          <div class="checkout-card">
+            <h3 class="checkout-card-title">Endereço de Entrega</h3>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 20px;">
+              Informe o endereço para entrega do pedido.
+            </p>
+            <form id="address-form">
+              <div class="form-row">
+                <div class="form-group" style="flex: 0 0 180px;">
+                  <label for="addr-cep">CEP <span class="required">*</span></label>
+                  <input type="text" id="addr-cep" name="cep" required placeholder="00000-000" maxlength="9">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label for="addr-street">Rua / Logradouro <span class="required">*</span></label>
+                  <input type="text" id="addr-street" name="street" required placeholder="Rua Exemplo">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex: 0 0 120px;">
+                  <label for="addr-number">Número <span class="required">*</span></label>
+                  <input type="text" id="addr-number" name="number" required placeholder="123">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label for="addr-complement">Complemento</label>
+                  <input type="text" id="addr-complement" name="complement" placeholder="Apt, Bloco, Sala...">
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="addr-neighborhood">Bairro <span class="required">*</span></label>
+                <input type="text" id="addr-neighborhood" name="neighborhood" required placeholder="Bairro">
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                  <label for="addr-city">Cidade <span class="required">*</span></label>
+                  <input type="text" id="addr-city" name="city" required placeholder="Cidade">
+                </div>
+                <div class="form-group" style="flex: 0 0 100px;">
+                  <label for="addr-state">UF <span class="required">*</span></label>
+                  <input type="text" id="addr-state" name="state" required placeholder="DF" maxlength="2">
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
 
         <!-- Direita: Resumo do Pedido -->
@@ -92,7 +140,7 @@
               </div>
 
               <button class="btn-checkout" id="btn-submit-order">
-                Enviar Pedido no WhatsApp 📲
+                Enviar Pedido 📲
               </button>
             </div>
           </div>
@@ -111,6 +159,9 @@
       </div>
     </div>
   </footer>
+
+  <!-- Toast de confirmação -->
+  <div class="toast-container" id="toast-container"></div>
 
   <script>
     const phoneWhatsApp = '5561995238383'; // Replace with actual number
@@ -243,52 +294,175 @@
     const submitBtn = document.getElementById('btn-submit-order');
     const form = document.getElementById('checkout-form');
 
-    submitBtn.addEventListener('click', (e) => {
-      e.preventDefault();
+    // --- CEP Auto-fill via ViaCEP ---
+    const cepInput = document.getElementById('addr-cep');
+    cepInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 8);
+      e.target.value = v;
+    });
+    cepInput.addEventListener('blur', async () => {
+      const cep = cepInput.value.replace(/\D/g, '');
+      if (cep.length !== 8) return;
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        if (!data.erro) {
+          document.getElementById('addr-street').value = data.logradouro || '';
+          document.getElementById('addr-neighborhood').value = data.bairro || '';
+          document.getElementById('addr-city').value = data.localidade || '';
+          document.getElementById('addr-state').value = data.uf || '';
+          document.getElementById('addr-number').focus();
+        }
+      } catch (_) { /* silently fail */ }
+    });
 
-      if (cart.length === 0) return;
-
-      // Validação de formulário HTML5 nativa
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-
+    // --- Gather order data ---
+    const gatherOrderData = () => {
       const clientName = document.getElementById('client-name').value.trim();
       const clientPhone = document.getElementById('client-phone').value.trim();
       const clientDoc = document.getElementById('client-doc').value.trim();
+      const cep = document.getElementById('addr-cep').value.trim();
+      const street = document.getElementById('addr-street').value.trim();
+      const number = document.getElementById('addr-number').value.trim();
+      const complement = document.getElementById('addr-complement').value.trim();
+      const neighborhood = document.getElementById('addr-neighborhood').value.trim();
+      const city = document.getElementById('addr-city').value.trim();
+      const state = document.getElementById('addr-state').value.trim();
 
-      let msg = `🎄 *Pedido Panettoneria Julieta* 🎄\n\n`;
-      msg += `*Dados do Cliente:*\n`;
-      msg += `Nome/Razão: ${clientName}\n`;
-      msg += `Contato: ${clientPhone}\n`;
-      msg += `Documento (CPF/CNPJ): ${clientDoc}\n\n`;
-
-      msg += `*Itens do Pedido:*\n`;
-
-      let total = 0;
-      let totalItems = 0;
-
-      cart.forEach(item => {
+      let total = 0, totalItems = 0;
+      const items = cart.map(item => {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
         totalItems += item.quantity;
-        msg += `📦 ${item.quantity}x ${item.name} (${item.weight}) - ${formatCurrency(itemTotal)}\n`;
+        return { ...item, itemTotal };
       });
 
+      let discountAmount = 0, finalTotal = total;
       if (totalItems > 4) {
-        const discountAmount = total * 0.20;
-        const finalTotal = total - discountAmount;
-        msg += `\nSubtotal: ${formatCurrency(total)}\n`;
-        msg += `Desconto B2B 20%: -${formatCurrency(discountAmount)}\n`;
-        msg += `*Total Final: ${formatCurrency(finalTotal)}*\n`;
-      } else {
-        msg += `\n*Total Final: ${formatCurrency(total)}*\n`;
+        discountAmount = total * 0.20;
+        finalTotal = total - discountAmount;
       }
 
-      const encodedMsg = encodeURIComponent(msg);
-      window.open(`https://wa.me/${phoneWhatsApp}?text=${encodedMsg}`, '_blank');
+      return {
+        clientName, clientPhone, clientDoc,
+        address: { cep, street, number, complement, neighborhood, city, state },
+        items, total, totalItems, discountAmount, finalTotal
+      };
+    };
+
+    // --- Validate all forms ---
+    const validateForms = () => {
+      const addressForm = document.getElementById('address-form');
+      if (!form.checkValidity()) { form.reportValidity(); return false; }
+      if (!addressForm.checkValidity()) { addressForm.reportValidity(); return false; }
+      return true;
+    };
+
+    // --- Firebase Init ---
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // --- WhatsApp + Firebase ---
+    submitBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      if (cart.length === 0) return;
+      if (!validateForms()) return;
+
+      const d = gatherOrderData();
+
+      // Desabilitar botão enquanto envia
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando...';
+
+      try {
+        // Salvar pedido no Firebase
+        const orderNum = String(Date.now()).slice(-6);
+        await db.collection('pedidos').add({
+          orderNum,
+          status: 'novo',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          client: {
+            name: d.clientName,
+            phone: d.clientPhone,
+            doc: d.clientDoc
+          },
+          address: d.address,
+          items: d.items.map(i => ({
+            name: i.name,
+            weight: i.weight,
+            quantity: i.quantity,
+            price: i.price,
+            itemTotal: i.itemTotal,
+            image: i.image
+          })),
+          subtotal: d.total,
+          totalItems: d.totalItems,
+          discountAmount: d.discountAmount,
+          finalTotal: d.finalTotal
+        });
+
+        // Montar mensagem WhatsApp
+        let msg = `🎄 *Pedido Panettoneria Julieta* 🎄\n`;
+        msg += `Comanda #${orderNum}\n\n`;
+        msg += `*Dados do Cliente:*\n`;
+        msg += `Nome/Razão: ${d.clientName}\n`;
+        msg += `Contato: ${d.clientPhone}\n`;
+        msg += `Documento (CPF/CNPJ): ${d.clientDoc}\n\n`;
+
+        msg += `*Endereço de Entrega:*\n`;
+        msg += `${d.address.street}, ${d.address.number}`;
+        if (d.address.complement) msg += ` - ${d.address.complement}`;
+        msg += `\n${d.address.neighborhood} - ${d.address.city}/${d.address.state}\n`;
+        msg += `CEP: ${d.address.cep}\n\n`;
+
+        msg += `*Itens do Pedido:*\n`;
+        d.items.forEach(item => {
+          msg += `📦 ${item.quantity}x ${item.name} (${item.weight}) - ${formatCurrency(item.itemTotal)}\n`;
+        });
+
+        if (d.totalItems > 4) {
+          msg += `\nSubtotal: ${formatCurrency(d.total)}\n`;
+          msg += `Desconto B2B 20%: -${formatCurrency(d.discountAmount)}\n`;
+          msg += `*Total Final: ${formatCurrency(d.finalTotal)}*\n`;
+        } else {
+          msg += `\n*Total Final: ${formatCurrency(d.total)}*\n`;
+        }
+
+        // Toast de sucesso
+        showToast('✅ Pedido enviado! Comanda a caminho da cozinha.');
+
+        // Limpar carrinho
+        cart = [];
+        saveCart();
+        renderCheckoutCart();
+
+        // Abrir WhatsApp
+        const encodedMsg = encodeURIComponent(msg);
+        setTimeout(() => {
+          window.open(`https://wa.me/${phoneWhatsApp}?text=${encodedMsg}`, '_blank');
+        }, 800);
+
+      } catch (err) {
+        console.error('Erro ao enviar pedido:', err);
+        showToast('❌ Erro ao enviar. Verifique sua conexão e tente novamente.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Enviar Pedido 📲';
+      }
     });
+
+    // --- Toast ---
+    const showToast = (message) => {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        if (container.contains(toast)) container.removeChild(toast);
+      }, 4000);
+    };
 
     // --- Setup Nav Scroll ---
     const handleScroll = () => {
