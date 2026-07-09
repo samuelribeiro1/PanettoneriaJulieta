@@ -150,6 +150,7 @@
     .order-card.status-novo { border-left: 4px solid var(--red); }
     .order-card.status-preparo { border-left: 4px solid var(--yellow); }
     .order-card.status-pronto { border-left: 4px solid var(--green); }
+    .order-card.status-cancelado { border-left: 4px solid #666; opacity: 0.55; }
 
     .order-card.flash {
       animation: flashNew 1s ease;
@@ -191,6 +192,7 @@
     .badge-novo { background: rgba(239,68,68,0.2); color: var(--red); }
     .badge-preparo { background: rgba(234,179,8,0.2); color: var(--yellow); }
     .badge-pronto { background: rgba(34,197,94,0.2); color: var(--green); }
+    .badge-cancelado { background: rgba(150,150,150,0.2); color: #999; }
 
     .order-body { padding: 16px 20px; }
 
@@ -314,6 +316,14 @@
     }
 
     .btn-print:hover { background: rgba(255,255,255,0.12); }
+
+    .btn-cancelar {
+      background: rgba(239,68,68,0.1);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.25) !important;
+    }
+
+    .btn-cancelar:hover { background: rgba(239,68,68,0.25); }
 
     /* --- Responsive --- */
     @media (max-width: 768px) {
@@ -442,18 +452,23 @@
       if (order.status === 'novo') {
         actionsHtml = `
           <button class="btn-preparo" onclick="updateStatus('${order.id}', 'preparo')">👨‍🍳 Em Preparo</button>
+          <button class="btn-cancelar" onclick="cancelOrder('${order.id}', '${order.orderNum}')">✕</button>
           <button class="btn-print" onclick="printComanda('${order.id}')">🖨️</button>`;
       } else if (order.status === 'preparo') {
         actionsHtml = `
           <button class="btn-pronto" onclick="updateStatus('${order.id}', 'pronto')">✅ Pronto</button>
+          <button class="btn-cancelar" onclick="cancelOrder('${order.id}', '${order.orderNum}')">✕</button>
           <button class="btn-print" onclick="printComanda('${order.id}')">🖨️</button>`;
+      } else if (order.status === 'cancelado') {
+        actionsHtml = `
+          <button class="btn-print" onclick="printComanda('${order.id}')" style="flex:1;">🖨️ Reimprimir</button>`;
       } else {
         actionsHtml = `
           <button class="btn-print" onclick="printComanda('${order.id}')" style="flex:1;">🖨️ Reimprimir</button>`;
       }
 
-      const statusLabel = { novo: 'Novo', preparo: 'Em Preparo', pronto: 'Pronto' };
-      const badgeClass = { novo: 'badge-novo', preparo: 'badge-preparo', pronto: 'badge-pronto' };
+      const statusLabel = { novo: 'Novo', preparo: 'Em Preparo', pronto: 'Pronto', cancelado: 'Cancelado' };
+      const badgeClass = { novo: 'badge-novo', preparo: 'badge-preparo', pronto: 'badge-pronto', cancelado: 'badge-cancelado' };
 
       return `
         <div class="order-card status-${order.status}" id="order-${order.id}">
@@ -476,7 +491,7 @@
             </div>
             <div class="order-items">${itemsHtml}</div>
             ${totalsHtml}
-            <div class="order-total">
+            <div class="order-total" ${order.status === 'cancelado' ? 'style="text-decoration: line-through; opacity: 0.7;"' : ''}>
               <span>Total</span>
               <span class="value">${formatCurrency(order.finalTotal || 0)}</span>
             </div>
@@ -500,8 +515,8 @@
         return;
       }
 
-      // Sort: novo first, then preparo, then pronto. Within each, newest first.
-      const statusOrder = { novo: 0, preparo: 1, pronto: 2 };
+      // Sort: novo first, then preparo, then pronto, then cancelado. Within each, newest first.
+      const statusOrder = { novo: 0, preparo: 1, pronto: 2, cancelado: 3 };
       const sorted = [...orders].sort((a, b) => {
         const sa = statusOrder[a.status] ?? 9;
         const sb = statusOrder[b.status] ?? 9;
@@ -521,6 +536,13 @@
         await db.collection('pedidos').doc(id).update({ status: newStatus });
       } catch (err) {
         console.error('Erro ao atualizar status:', err);
+      }
+    };
+
+    // --- Cancel Order ---
+    window.cancelOrder = (id, orderNum) => {
+      if (confirm(`Tem certeza que deseja CANCELAR o pedido #${orderNum}?`)) {
+        updateStatus(id, 'cancelado');
       }
     };
 
