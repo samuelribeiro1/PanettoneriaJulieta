@@ -129,110 +129,125 @@
     /* --- Orders Grid --- */
     .orders-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
     }
 
     /* --- Order Card --- */
     .order-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 16px;
       overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .order-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
     }
 
-    .order-card.status-novo { border-left: 4px solid var(--red); }
-    .order-card.status-preparo { border-left: 4px solid var(--yellow); }
-    .order-card.status-pronto { border-left: 4px solid var(--green); }
-    .order-card.status-cancelado { border-left: 4px solid #666; opacity: 0.55; }
+    .order-card.status-novo { border-left: 5px solid var(--red); }
+    .order-card.status-preparo { border-left: 5px solid var(--yellow); }
+    .order-card.status-pronto { border-left: 5px solid var(--green); }
+    .order-card.status-cancelado { border-left: 5px solid #666; opacity: 0.6; }
 
     .order-card.flash {
-      animation: flashNew 1s ease;
+      animation: flashNew 1.5s ease;
     }
 
     @keyframes flashNew {
-      0%, 50% { background: rgba(239, 68, 68, 0.15); }
+      0%, 50% { background: rgba(239, 68, 68, 0.2); }
       100% { background: var(--bg-card); }
     }
 
     .order-header {
-      padding: 16px 20px;
+      padding: 18px 22px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
     }
 
     .order-num {
       font-weight: 800;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       color: var(--accent);
+      letter-spacing: 0.5px;
     }
 
     .order-time {
       font-size: 0.8rem;
       color: var(--text-muted);
+      margin-top: 2px;
     }
 
     .order-status-badge {
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.7rem;
+      padding: 6px 14px;
+      border-radius: 24px;
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
     }
 
-    .badge-novo { background: rgba(239,68,68,0.2); color: var(--red); }
-    .badge-preparo { background: rgba(234,179,8,0.2); color: var(--yellow); }
-    .badge-pronto { background: rgba(34,197,94,0.2); color: var(--green); }
-    .badge-cancelado { background: rgba(150,150,150,0.2); color: #999; }
+    .badge-novo { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+    .badge-preparo { background: rgba(234,179,8,0.2); color: #fde047; border: 1px solid rgba(234,179,8,0.3); }
+    .badge-pronto { background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+    .badge-cancelado { background: rgba(150,150,150,0.2); color: #d1d5db; border: 1px solid rgba(150,150,150,0.3); }
 
-    .order-body { padding: 16px 20px; }
+    .order-body { 
+      padding: 22px; 
+      flex: 1;
+    }
 
     .order-client {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px dashed var(--border);
+      gap: 4px;
     }
 
     .order-client .name {
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 1.05rem;
+      color: #fff;
     }
 
     .order-client .detail {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .order-address {
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px dashed var(--border);
       font-size: 0.82rem;
       color: var(--text-muted);
     }
 
-    .order-address .label {
-      font-weight: 600;
-      color: var(--text);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+    .order-address {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
     }
 
-    .order-items { margin-bottom: 12px; }
+    .order-address .label {
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .order-items { margin-bottom: 16px; }
 
     .order-item {
       display: flex;
