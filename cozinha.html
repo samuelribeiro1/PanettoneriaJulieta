@@ -340,6 +340,96 @@
 
     .btn-cancelar:hover { background: rgba(239,68,68,0.25); }
 
+    .btn-cancelar:hover { background: rgba(239,68,68,0.25); }
+
+    /* --- Tabs --- */
+    .tabs-nav {
+      display: flex;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 16px 24px;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom: 3px solid var(--accent);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* --- Produtos --- */
+    .products-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+
+    /* --- Modal --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: none; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 16px; width: 90%; max-width: 600px;
+      max-height: 90vh; overflow-y: auto; padding: 24px;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-header h2 { font-size: 1.4rem; color: var(--accent); }
+    .btn-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-muted); }
+    .form-group input, .form-group textarea {
+      width: 100%; padding: 10px; border-radius: 8px;
+      background: var(--bg-card); border: 1px solid var(--border); color: var(--text);
+      font-family: 'Inter', sans-serif;
+    }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); }
+    .prices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    
+    .product-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 16px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .product-card img { width: 100%; height: 200px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.02); }
+    .product-card h3 { color: var(--accent); }
+    .product-actions { display: flex; gap: 10px; margin-top: auto; }
+    .btn-edit { background: rgba(255,255,255,0.1); color: #fff; border:none; padding:8px; border-radius:6px; cursor:pointer; flex:1; }
+    .btn-delete { background: rgba(239,68,68,0.1); color: var(--red); border:none; padding:8px; border-radius:6px; cursor:pointer; }
+
     /* --- Responsive --- */
     @media (max-width: 768px) {
       .orders-grid {
@@ -368,18 +458,94 @@
     </div>
   </header>
 
+  <!-- Tabs Navigation -->
+  <div class="tabs-nav">
+    <button class="tab-btn active" onclick="switchTab('tab-pedidos', this)">📋 Pedidos</button>
+    <button class="tab-btn" onclick="switchTab('tab-produtos', this)">📦 Produtos</button>
+  </div>
+
   <!-- Main -->
   <main class="kitchen-main">
-    <div id="orders-container" class="orders-grid">
-      <div class="kitchen-empty">
-        <div class="icon">🕐</div>
-        <p>Conectando ao sistema de pedidos...</p>
+    
+    <!-- Tab: Pedidos -->
+    <div id="tab-pedidos" class="tab-content active">
+      <div id="orders-container" class="orders-grid">
+        <div class="kitchen-empty">
+          <div class="icon">🕐</div>
+          <p>Conectando ao sistema de pedidos...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Produtos -->
+    <div id="tab-produtos" class="tab-content">
+      <div class="products-header">
+        <h2>Catálogo de Produtos</h2>
+        <div>
+          <button class="btn-primary" onclick="seedProducts()" style="background:#444; color:#fff; margin-right:10px;">Carga Inicial (Seed)</button>
+          <button class="btn-primary" onclick="openProductModal()">+ Novo Produto</button>
+        </div>
+      </div>
+      <div id="products-container" class="orders-grid">
+        <div class="kitchen-empty">
+          <p>Carregando produtos...</p>
+        </div>
       </div>
     </div>
   </main>
 
   <!-- Hidden iframe for silent printing -->
   <iframe id="print-frame" style="display:none;"></iframe>
+
+  <!-- Modal Produto -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="modal-title">Novo Produto</h2>
+        <button class="btn-close" onclick="closeProductModal()">×</button>
+      </div>
+      <form id="product-form" onsubmit="saveProduct(event)">
+        <input type="hidden" id="prod-id">
+        <div class="form-group">
+          <label>Nome do Produto</label>
+          <input type="text" id="prod-name" required>
+        </div>
+        <div class="form-group">
+          <label>Caminho da Imagem (Ex: img/Gotas.png)</label>
+          <input type="text" id="prod-image" required>
+        </div>
+        <div class="form-group">
+          <label>Tag (Opcional - Ex: Mais Vendido)</label>
+          <input type="text" id="prod-tag">
+        </div>
+        <div class="form-group">
+          <label>Descrição Curta</label>
+          <textarea id="prod-desc" rows="2" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>História Completa (Aparece no Flyer)</label>
+          <textarea id="prod-story" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Ingredientes (Separados por vírgula)</label>
+          <textarea id="prod-ingredients" rows="2" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Preços (R$)</label>
+          <div class="prices-grid">
+            <div><small>100g</small><input type="number" step="0.01" id="price-100g" required></div>
+            <div><small>250g</small><input type="number" step="0.01" id="price-250g" required></div>
+            <div><small>300g</small><input type="number" step="0.01" id="price-300g" required></div>
+            <div><small>400g</small><input type="number" step="0.01" id="price-400g" required></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="prod-active" checked> Produto Ativo (Visível no site)</label>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%">Salvar Produto</button>
+      </form>
+    </div>
+  </div>
 
   <script>
     // --- Firebase Init ---
@@ -389,6 +555,7 @@
     // --- State ---
     let orders = [];
     let initialLoad = true;
+    let productsList = [];
 
     // --- Format Currency ---
     const formatCurrency = (val) =>
@@ -427,6 +594,87 @@
       if (!ts) return '--/--';
       const d = ts.toDate ? ts.toDate() : new Date(ts);
       return d.toLocaleDateString('pt-BR');
+    };
+
+    // --- Tabs Logic ---
+    const switchTab = (tabId, btn) => {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    };
+
+    // --- Seed Products (Temporary) ---
+    const seedProducts = async () => {
+      if (!confirm("Deseja fazer a carga inicial dos produtos? Isso vai enviar os produtos fixos do código para o Firebase.")) return;
+      
+      const staticProducts = [
+        {
+          name: 'Chocotone Tradicional',
+          image: 'img/Gotas.png',
+          tag: 'Mais Vendido',
+          tagClass: 'bestseller',
+          description: 'Massa super leve com generosas gotas de chocolate ao leite belga, um clássico indispensável.',
+          story: 'Nascido da vontade de recriar as memórias das antigas docerias europeias. Cada fornada leva mais de 48 horas de fermentação natural, garantindo aquela massa que desfia como algodão e derrete na boca com as generosas gotas de chocolate belga.',
+          ingredients: ['Massa madre de fermentação longa', 'Gotas de chocolate belga 54%', 'Manteiga artesanal extra-fina', 'Gemas caipiras frescas', 'Extrato natural de baunilha de Madagascar'],
+          prices: { '100g': 24.90, '250g': 49.90, '300g': 59.90, '400g': 74.90 },
+          active: true
+        },
+        {
+          name: 'Pistache Premium',
+          image: 'img/Pistache.png',
+          tag: 'Exclusivo',
+          tagClass: 'premium',
+          description: 'Recheado com autêntico creme de pistache italiano e cobertura de chocolate branco com pedaços torrados.',
+          story: 'O auge da sofisticação da Panettoneria Julieta. Uma homenagem à tradição da região da Sicília, na Itália, onde os melhores pistaches do mundo são colhidos. Criamos um recheio extremamente aveludado e equilibrado, que contrasta perfeitamente com a crocância da nossa cobertura exclusiva.',
+          ingredients: ['Creme artesanal de Pistache di Bronte DOP', 'Cobertura de chocolate branco belga', 'Pistaches torrados da Sicília', 'Farinha de trigo tipo 00 italiana', 'Manteiga de fermentação lenta'],
+          prices: { '100g': 29.90, '250g': 59.90, '300g': 69.90, '400g': 89.90 },
+          active: true
+        },
+        {
+          name: 'Caramelo Salgado',
+          image: 'img/Caramelo.png',
+          tag: '',
+          tagClass: '',
+          description: 'A receita milanesa perfeita, com Caramelo Salgado e enfeitado com Ouro Branco.',
+          story: 'A combinação ousada que conquistou corações. Uma verdadeira dança entre o doce e o salgado. Preparamos o nosso caramelo lentamente em tachos de cobre e finalizamos com delicadas escamas de sal marinho, proporcionando explosões de sabor a cada mordida.',
+          ingredients: ['Caramelo artesanal em tacho de cobre', 'Flocos de Sal Marinho (Flor de Sal)', 'Chocolate Ouro Branco', 'Manteiga de cacau 100% pura', 'Essência de caramelo tostado'],
+          prices: { '100g': 19.90, '250g': 39.90, '300g': 49.90, '400g': 64.90 },
+          active: true
+        },
+        {
+          name: 'Frutas Cristalizadas',
+          image: 'img/Frutas.png',
+          tag: 'Tradição',
+          tagClass: 'new',
+          description: 'O sabor inconfundível do Natal com frutas cristalizadas artesanalmente e uvas passas selecionadas.',
+          story: 'Um tributo às nossas raízes e à verdadeira essência do Natal. Não usamos frutas industriais; nós mesmos cristalizamos lentamente laranjas e cidras em nossa cozinha, preservando os óleos essenciais que perfumam toda a casa ao abrir a embalagem.',
+          ingredients: ['Cascas de laranja e cidra cristalizadas na casa', 'Uvas passas turcas umedecidas em rum', 'Açúcar cristal orgânico', 'Gemas caipiras selecionadas', 'Raspas de limão siciliano fresco'],
+          prices: { '100g': 18.90, '250g': 34.90, '300g': 44.90, '400g': 59.90 },
+          active: true
+        },
+        {
+          name: 'SuperChocolate',
+          image: 'img/SuperChocolate.png',
+          tag: 'Premium',
+          tagClass: 'premium',
+          description: 'Massa de cacau, recheio intenso de trufa e uma cobertura espetacular de chocolate amargo crocante.',
+          story: 'Nossa "Joia da Coroa". Desenvolvido para os verdadeiros aficionados por chocolate. Substituímos parte da farinha por cacau 100% alcalino na massa, recheamos com trufa intensa e banhamos com chocolate amargo, garantindo que seja uma experiência sensorial indescritível.',
+          ingredients: ['Blend exclusivo de cacau 70% amazônico', 'Recheio trufado meio amargo', 'Massa de fermentação natural de cacau', 'Nibs de cacau crocantes', 'Manteiga de fermentação europeia'],
+          prices: { '100g': 29.90, '250g': 59.90, '300g': 69.90, '400g': 84.90 },
+          active: true
+        }
+      ];
+
+      try {
+        for (const prod of staticProducts) {
+          await db.collection('produtos').add(prod);
+        }
+        alert("Produtos enviados com sucesso!");
+      } catch (err) {
+        console.error("Erro ao enviar produtos:", err);
+        alert("Erro: " + err.message);
+      }
     };
 
     // --- Update Counters ---
@@ -656,7 +904,7 @@
       setTimeout(() => printComanda(order.id), 500);
     };
 
-    // --- Real-time Listener ---
+    // --- Real-time Listener (Orders) ---
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -702,6 +950,118 @@
         document.getElementById('status-dot').classList.add('offline');
         document.getElementById('status-text').textContent = 'Desconectado';
       });
+
+    // ==========================================
+    // PRODUCT MANAGEMENT LOGIC
+    // ==========================================
+
+    // --- Fetch Products ---
+    db.collection('produtos').onSnapshot((snapshot) => {
+      productsList = [];
+      snapshot.forEach(doc => {
+        productsList.push({ id: doc.id, ...doc.data() });
+      });
+      renderProducts();
+    });
+
+    const renderProducts = () => {
+      const container = document.getElementById('products-container');
+      if (productsList.length === 0) {
+        container.innerHTML = `<div class="kitchen-empty"><p>Nenhum produto cadastrado.</p></div>`;
+        return;
+      }
+      container.innerHTML = productsList.map(p => `
+        <div class="product-card" style="opacity: ${p.active ? '1' : '0.5'}">
+          <img src="${p.image}" alt="${p.name}">
+          <h3>${p.name}</h3>
+          <p style="font-size:0.8rem; color:var(--text-muted);">${p.description}</p>
+          <div style="font-size:0.8rem; margin: 10px 0;">
+            100g: ${formatCurrency(p.prices['100g'])}<br>
+            250g: ${formatCurrency(p.prices['250g'])}
+          </div>
+          <div class="product-actions">
+            <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Editar</button>
+            <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    // --- Modal Logic ---
+    const modal = document.getElementById('product-modal');
+    
+    window.openProductModal = () => {
+      document.getElementById('product-form').reset();
+      document.getElementById('prod-id').value = '';
+      document.getElementById('modal-title').textContent = 'Novo Produto';
+      modal.classList.add('active');
+    };
+
+    window.closeProductModal = () => {
+      modal.classList.remove('active');
+    };
+
+    window.editProduct = (id) => {
+      const p = productsList.find(prod => prod.id === id);
+      if (!p) return;
+      
+      document.getElementById('prod-id').value = p.id;
+      document.getElementById('prod-name').value = p.name;
+      document.getElementById('prod-image').value = p.image;
+      document.getElementById('prod-tag').value = p.tag || '';
+      document.getElementById('prod-desc').value = p.description;
+      document.getElementById('prod-story').value = p.story;
+      document.getElementById('prod-ingredients').value = p.ingredients.join(', ');
+      document.getElementById('price-100g').value = p.prices['100g'];
+      document.getElementById('price-250g').value = p.prices['250g'];
+      document.getElementById('price-300g').value = p.prices['300g'];
+      document.getElementById('price-400g').value = p.prices['400g'];
+      document.getElementById('prod-active').checked = p.active !== false;
+      
+      document.getElementById('modal-title').textContent = 'Editar Produto';
+      modal.classList.add('active');
+    };
+
+    window.saveProduct = async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('prod-id').value;
+      const data = {
+        name: document.getElementById('prod-name').value,
+        image: document.getElementById('prod-image').value,
+        tag: document.getElementById('prod-tag').value,
+        description: document.getElementById('prod-desc').value,
+        story: document.getElementById('prod-story').value,
+        ingredients: document.getElementById('prod-ingredients').value.split(',').map(s => s.trim()),
+        prices: {
+          '100g': parseFloat(document.getElementById('price-100g').value),
+          '250g': parseFloat(document.getElementById('price-250g').value),
+          '300g': parseFloat(document.getElementById('price-300g').value),
+          '400g': parseFloat(document.getElementById('price-400g').value)
+        },
+        active: document.getElementById('prod-active').checked
+      };
+
+      try {
+        if (id) {
+          await db.collection('produtos').doc(id).update(data);
+        } else {
+          await db.collection('produtos').add(data);
+        }
+        closeProductModal();
+      } catch (err) {
+        alert("Erro ao salvar: " + err.message);
+      }
+    };
+
+    window.deleteProduct = async (id) => {
+      if (confirm("Tem certeza que deseja excluir este produto permanentemente?")) {
+        try {
+          await db.collection('produtos').doc(id).delete();
+        } catch (err) {
+          alert("Erro ao excluir: " + err.message);
+        }
+      }
+    };
 
   </script>
 </body>
