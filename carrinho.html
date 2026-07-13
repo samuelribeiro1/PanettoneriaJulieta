@@ -13,6 +13,79 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <!-- QR Code -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+  <style>
+    /* Payment Methods */
+    .payment-options { display: flex; flex-direction: column; gap: 10px; }
+    .payment-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; border: 2px solid rgba(200,165,90,0.15);
+      border-radius: 10px; cursor: pointer; transition: all 0.2s;
+      background: rgba(255,255,255,0.02);
+    }
+    .payment-option:hover { border-color: rgba(200,165,90,0.4); }
+    .payment-option.selected {
+      border-color: var(--color-bordo); background: rgba(94,18,36,0.06);
+    }
+    .payment-option input[type=radio] { display: none; }
+    .payment-radio {
+      width: 20px; height: 20px; border: 2px solid rgba(200,165,90,0.3);
+      border-radius: 50%; position: relative; flex-shrink: 0;
+    }
+    .payment-option.selected .payment-radio {
+      border-color: var(--color-bordo);
+    }
+    .payment-option.selected .payment-radio::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--color-bordo);
+    }
+    .payment-icon { font-size: 1.5rem; }
+    .payment-label strong { display: block; font-size: 0.95rem; }
+    .payment-label small { color: var(--color-text-muted); font-size: 0.8rem; }
+
+    /* PIX Modal */
+    .pix-modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+      display: none; justify-content: center; align-items: center; z-index: 9999;
+    }
+    .pix-modal-overlay.active { display: flex; }
+    .pix-modal {
+      background: #fff; border-radius: 16px; padding: 30px;
+      width: 90%; max-width: 420px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .pix-modal h3 { color: #1a1a2e; font-size: 1.3rem; margin-bottom: 6px; }
+    .pix-modal .pix-value {
+      font-size: 2rem; font-weight: 800; color: #5e1224;
+      margin: 10px 0 16px;
+    }
+    .pix-modal canvas { margin: 0 auto 16px; display: block; }
+    .pix-copy-area {
+      background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;
+      padding: 12px; word-break: break-all; font-size: 0.75rem;
+      color: #333; margin-bottom: 12px; text-align: left;
+      max-height: 80px; overflow-y: auto;
+    }
+    .btn-copy {
+      background: #5e1224; color: #fff; border: none; padding: 12px 24px;
+      border-radius: 8px; font-weight: 700; cursor: pointer;
+      font-family: inherit; width: 100%; font-size: 1rem;
+      transition: opacity 0.2s;
+    }
+    .btn-copy:hover { opacity: 0.9; }
+    .pix-modal .pix-footer {
+      margin-top: 16px; font-size: 0.8rem; color: #999;
+    }
+    .btn-close-pix {
+      background: transparent; border: 1px solid #ddd; color: #666;
+      padding: 10px; border-radius: 8px; cursor: pointer; width: 100%;
+      margin-top: 8px; font-family: inherit;
+    }
+  </style>
 </head>
 
 <body class="checkout-page">
@@ -112,6 +185,43 @@
               </div>
             </form>
           </div>
+
+          <!-- Forma de Pagamento -->
+          <div class="checkout-card">
+            <h3 class="checkout-card-title">Forma de Pagamento</h3>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 20px;">
+              Escolha como deseja pagar.
+            </p>
+            <div class="payment-options">
+              <label class="payment-option selected" onclick="selectPayment('pix', this)">
+                <input type="radio" name="payment" value="pix" checked>
+                <span class="payment-radio"></span>
+                <span class="payment-icon">🟢</span>
+                <span class="payment-label">
+                  <strong>PIX</strong>
+                  <small>Pagamento instantâneo via QR Code</small>
+                </span>
+              </label>
+              <label class="payment-option" onclick="selectPayment('dinheiro', this)">
+                <input type="radio" name="payment" value="dinheiro">
+                <span class="payment-radio"></span>
+                <span class="payment-icon">💵</span>
+                <span class="payment-label">
+                  <strong>Dinheiro</strong>
+                  <small>Pagar em espécie na entrega</small>
+                </span>
+              </label>
+              <label class="payment-option" onclick="selectPayment('cartao', this)">
+                <input type="radio" name="payment" value="cartao">
+                <span class="payment-radio"></span>
+                <span class="payment-icon">💳</span>
+                <span class="payment-label">
+                  <strong>Cartão</strong>
+                  <small>Débito ou crédito na entrega (maquininha)</small>
+                </span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Direita: Resumo do Pedido -->
@@ -162,6 +272,20 @@
 
   <!-- Toast de confirmação -->
   <div class="toast-container" id="toast-container"></div>
+
+  <!-- PIX Modal -->
+  <div class="pix-modal-overlay" id="pix-modal" onclick="closePixModal()">
+    <div class="pix-modal" onclick="event.stopPropagation()">
+      <h3>🟢 Pagamento via PIX</h3>
+      <p style="color:#666; font-size:0.85rem;">Escaneie o QR Code ou copie o código abaixo</p>
+      <div class="pix-value" id="pix-value">R$ 0,00</div>
+      <canvas id="pix-qrcode"></canvas>
+      <div class="pix-copy-area" id="pix-copy-text"></div>
+      <button class="btn-copy" onclick="copyPixCode()">📋 Copiar Código PIX</button>
+      <p class="pix-footer">Após o pagamento, o pedido será confirmado automaticamente.</p>
+      <button class="btn-close-pix" onclick="closePixModal()">Fechar</button>
+    </div>
+  </div>
 
   <script>
     const phoneWhatsApp = '5561995238383'; // Replace with actual number
@@ -347,8 +471,107 @@
       return {
         clientName, clientPhone, clientDoc,
         address: { cep, street, number, complement, neighborhood, city, state },
-        items, total, totalItems, discountAmount, finalTotal
+        items, total, totalItems, discountAmount, finalTotal,
+        paymentMethod: document.querySelector('input[name="payment"]:checked').value
       };
+    };
+
+    // --- Payment Selection ---
+    let selectedPayment = 'pix';
+    window.selectPayment = (method, el) => {
+      selectedPayment = method;
+      document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      el.querySelector('input').checked = true;
+    };
+
+    // --- PIX Payload Generator (EMV QR Code) ---
+    const generatePixPayload = (valor) => {
+      const pad = (id, val) => id + String(val.length).padStart(2, '0') + val;
+      
+      // Merchant Account Information (PIX)
+      const gui = pad('00', 'br.gov.bcb.pix');
+      const key = pad('01', pixConfig.chave);
+      const mai = pad('26', gui + key);
+      
+      const pfi = pad('00', '01');                         // Payload Format Indicator
+      const mcc = pad('52', '0000');                       // Merchant Category Code
+      const cur = pad('53', '986');                        // Currency (BRL)
+      const amt = pad('54', valor.toFixed(2));             // Transaction Amount
+      const ccode = pad('58', 'BR');                       // Country Code
+      const mname = pad('59', pixConfig.nome.substring(0, 25));
+      const mcity = pad('60', pixConfig.cidade.substring(0, 15));
+      
+      // Additional Data (txid)
+      const txid = pad('05', '***');                       // Reference Label
+      const addData = pad('62', txid);
+      
+      // Payload without CRC
+      const payload = pfi + mai + mcc + cur + amt + ccode + mname + mcity + addData + '6304';
+      
+      // CRC16-CCITT
+      const crc = crc16ccitt(payload);
+      return payload + crc;
+    };
+
+    const crc16ccitt = (str) => {
+      let crc = 0xFFFF;
+      for (let i = 0; i < str.length; i++) {
+        crc ^= str.charCodeAt(i) << 8;
+        for (let j = 0; j < 8; j++) {
+          if (crc & 0x8000) {
+            crc = (crc << 1) ^ 0x1021;
+          } else {
+            crc <<= 1;
+          }
+          crc &= 0xFFFF;
+        }
+      }
+      return crc.toString(16).toUpperCase().padStart(4, '0');
+    };
+
+    // --- PIX Modal ---
+    let currentPixCode = '';
+
+    const showPixModal = (valor) => {
+      const code = generatePixPayload(valor);
+      currentPixCode = code;
+      
+      document.getElementById('pix-value').textContent = formatCurrency(valor);
+      document.getElementById('pix-copy-text').textContent = code;
+      
+      // Generate QR Code
+      const canvas = document.getElementById('pix-qrcode');
+      QRCode.toCanvas(canvas, code, {
+        width: 250,
+        margin: 2,
+        color: { dark: '#1a1a2e', light: '#ffffff' }
+      });
+      
+      document.getElementById('pix-modal').classList.add('active');
+    };
+
+    window.closePixModal = () => {
+      document.getElementById('pix-modal').classList.remove('active');
+    };
+
+    window.copyPixCode = () => {
+      navigator.clipboard.writeText(currentPixCode).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.textContent = '✅ Código copiado!';
+        setTimeout(() => { btn.textContent = '📋 Copiar Código PIX'; }, 2000);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = currentPixCode;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        const btn = document.querySelector('.btn-copy');
+        btn.textContent = '✅ Código copiado!';
+        setTimeout(() => { btn.textContent = '📋 Copiar Código PIX'; }, 2000);
+      });
     };
 
     // --- Validate all forms ---
@@ -378,6 +601,8 @@
       try {
         // Salvar pedido no Firebase
         const orderNum = String(Date.now()).slice(-6);
+        const paymentLabels = { pix: 'PIX', dinheiro: 'Dinheiro', cartao: 'Cartão' };
+        
         await db.collection('pedidos').add({
           orderNum,
           status: 'novo',
@@ -399,7 +624,9 @@
           subtotal: d.total,
           totalItems: d.totalItems,
           discountAmount: d.discountAmount,
-          finalTotal: d.finalTotal
+          finalTotal: d.finalTotal,
+          paymentMethod: d.paymentMethod,
+          paymentLabel: paymentLabels[d.paymentMethod]
         });
 
         // Montar mensagem WhatsApp
@@ -429,6 +656,9 @@
           msg += `\n*Total Final: ${formatCurrency(d.total)}*\n`;
         }
 
+        const paymentLabels = { pix: '🟢 PIX', dinheiro: '💵 Dinheiro', cartao: '💳 Cartão' };
+        msg += `\n*Pagamento:* ${paymentLabels[d.paymentMethod]}\n`;
+
         // Toast de sucesso
         showToast('✅ Pedido enviado! Comanda a caminho da cozinha.');
 
@@ -442,6 +672,13 @@
         setTimeout(() => {
           window.open(`https://wa.me/${phoneWhatsApp}?text=${encodedMsg}`, '_blank');
         }, 800);
+
+        // Se for PIX, mostrar QR Code
+        if (d.paymentMethod === 'pix') {
+          setTimeout(() => {
+            showPixModal(d.finalTotal);
+          }, 1200);
+        }
 
       } catch (err) {
         console.error('Erro ao enviar pedido:', err);
