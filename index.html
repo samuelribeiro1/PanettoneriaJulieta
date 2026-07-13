@@ -203,6 +203,16 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // --- Cart State ---
+    let cart = [];
+    const loadCart = () => {
+      const saved = localStorage.getItem('panettoneria_cart');
+      if (saved) {
+        cart = JSON.parse(saved);
+      }
+    };
+    loadCart();
+
     // --- Product Data ---
     let productsData = [];
 
