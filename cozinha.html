@@ -421,14 +421,50 @@
     .prices-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     
     .product-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-      padding: 16px; display: flex; flex-direction: column; gap: 10px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.3s ease;
     }
-    .product-card img { width: 100%; height: 200px; object-fit: contain; border-radius: 8px; background: rgba(255,255,255,0.02); }
-    .product-card h3 { color: var(--accent); }
-    .product-actions { display: flex; gap: 10px; margin-top: auto; }
-    .btn-edit { background: rgba(255,255,255,0.1); color: #fff; border:none; padding:8px; border-radius:6px; cursor:pointer; flex:1; }
-    .btn-delete { background: rgba(239,68,68,0.1); color: var(--red); border:none; padding:8px; border-radius:6px; cursor:pointer; }
+    .product-card:hover { transform: translateY(-4px); }
+    .product-card .prod-img-wrap { position: relative; background: rgba(255,255,255,0.03); }
+    .product-card .prod-img-wrap img { width: 100%; height: 200px; object-fit: contain; display: block; }
+    .product-card .prod-img-wrap .prod-status-tag {
+      position: absolute; top: 10px; right: 10px; padding: 4px 12px;
+      border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    }
+    .prod-tag-active { background: rgba(34,197,94,0.2); color: #86efac; }
+    .prod-tag-inactive { background: rgba(239,68,68,0.2); color: #fca5a5; }
+    .product-card .prod-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+    .product-card h3 { color: var(--accent); font-size: 1.1rem; }
+    .product-card .prod-prices { font-size: 0.8rem; color: var(--text-muted); line-height: 1.6; }
+    .product-actions { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); }
+    .btn-edit {
+      background: rgba(200,165,90,0.15); color: var(--accent); border: 1px solid rgba(200,165,90,0.3);
+      padding: 10px; border-radius: 8px; cursor: pointer; flex: 1; font-weight: 600;
+      font-family: 'Inter', sans-serif; transition: background 0.2s;
+    }
+    .btn-edit:hover { background: rgba(200,165,90,0.3); }
+    .btn-delete {
+      background: rgba(239,68,68,0.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2);
+      padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600;
+      font-family: 'Inter', sans-serif; transition: background 0.2s;
+    }
+    .btn-delete:hover { background: rgba(239,68,68,0.25); }
+
+    /* --- Upload --- */
+    .upload-area {
+      border: 2px dashed var(--border); border-radius: 10px; padding: 20px;
+      text-align: center; cursor: pointer; transition: border-color 0.2s;
+      position: relative;
+    }
+    .upload-area:hover { border-color: var(--accent); }
+    .upload-area input[type=file] {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0; cursor: pointer;
+    }
+    .upload-area .upload-label { color: var(--text-muted); font-size: 0.85rem; }
+    .upload-area .upload-label strong { color: var(--accent); }
+    .upload-preview { max-height: 120px; border-radius: 8px; margin-top: 10px; }
 
     /* --- Responsive --- */
     @media (max-width: 768px) {
@@ -482,7 +518,6 @@
       <div class="products-header">
         <h2>Catálogo de Produtos</h2>
         <div>
-          <button class="btn-primary" onclick="seedProducts()" style="background:#444; color:#fff; margin-right:10px;">Carga Inicial (Seed)</button>
           <button class="btn-primary" onclick="openProductModal()">+ Novo Produto</button>
         </div>
       </div>
@@ -506,13 +541,21 @@
       </div>
       <form id="product-form" onsubmit="saveProduct(event)">
         <input type="hidden" id="prod-id">
+        <input type="hidden" id="prod-current-image">
         <div class="form-group">
           <label>Nome do Produto</label>
           <input type="text" id="prod-name" required>
         </div>
         <div class="form-group">
-          <label>Caminho da Imagem (Ex: img/Gotas.png)</label>
-          <input type="text" id="prod-image" required>
+          <label>Imagem do Produto (máx. 5MB)</label>
+          <div class="upload-area" id="upload-area">
+            <input type="file" id="prod-image-file" accept="image/*" onchange="handleImageSelect(this)">
+            <div class="upload-label" id="upload-label">
+              📷 <strong>Clique aqui</strong> ou arraste uma imagem<br>
+              <small>PNG, JPG ou WEBP — até 5MB</small>
+            </div>
+          </div>
+          <img id="upload-preview" class="upload-preview" style="display:none;">
         </div>
         <div class="form-group">
           <label>Tag (Opcional - Ex: Mais Vendido)</label>
@@ -542,7 +585,7 @@
         <div class="form-group">
           <label><input type="checkbox" id="prod-active" checked> Produto Ativo (Visível no site)</label>
         </div>
-        <button type="submit" class="btn-primary" style="width:100%">Salvar Produto</button>
+        <button type="submit" class="btn-primary" id="btn-save-product" style="width:100%">Salvar Produto</button>
       </form>
     </div>
   </div>
@@ -556,6 +599,7 @@
     let orders = [];
     let initialLoad = true;
     let productsList = [];
+    let selectedImageFile = null;
 
     // --- Format Currency ---
     const formatCurrency = (val) =>
@@ -604,10 +648,8 @@
       btn.classList.add('active');
     };
 
-    // --- Seed Products (Temporary) ---
-    const seedProducts = async () => {
-      if (!confirm("Deseja fazer a carga inicial dos produtos? Isso vai enviar os produtos fixos do código para o Firebase.")) return;
-      
+    // --- Auto-Seed Products ---
+    const autoSeedProducts = async () => {
       const staticProducts = [
         {
           name: 'Chocotone Tradicional',
@@ -670,10 +712,84 @@
         for (const prod of staticProducts) {
           await db.collection('produtos').add(prod);
         }
-        alert("Produtos enviados com sucesso!");
+        console.log('Produtos iniciais cadastrados com sucesso!');
       } catch (err) {
-        console.error("Erro ao enviar produtos:", err);
-        alert("Erro: " + err.message);
+        console.error('Erro ao fazer seed:', err);
+      }
+    };
+
+
+
+    // --- Image Compress & Base64 ---
+    const compressImage = (file, maxWidth = 800, quality = 0.75) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width;
+            let h = img.height;
+            
+            // Resize if larger than maxWidth
+            if (w > maxWidth) {
+              h = Math.round(h * maxWidth / w);
+              w = maxWidth;
+            }
+            
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            
+            // Convert to JPEG base64
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataUrl);
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    };
+
+    const handleImageSelect = async (input) => {
+      const file = input.files[0];
+      const preview = document.getElementById('upload-preview');
+      const label = document.getElementById('upload-label');
+      
+      if (!file) return;
+      
+      // Validate size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('A imagem deve ter no máximo 5MB!');
+        input.value = '';
+        return;
+      }
+      
+      // Validate type
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor, selecione apenas imagens!');
+        input.value = '';
+        return;
+      }
+      
+      label.innerHTML = '⏳ Comprimindo imagem...';
+      
+      try {
+        // Compress and convert to base64
+        const base64 = await compressImage(file);
+        selectedImageFile = base64; // Now stores the base64 string directly
+        
+        preview.src = base64;
+        preview.style.display = 'block';
+        
+        const sizeKB = Math.round(base64.length * 0.75 / 1024);
+        label.innerHTML = `📷 <strong>${file.name}</strong> (comprimida: ~${sizeKB} KB)`;
+      } catch (err) {
+        alert('Erro ao processar imagem.');
+        label.innerHTML = '📷 <strong>Clique aqui</strong> ou arraste uma imagem<br><small>PNG, JPG ou WEBP — até 5MB</small>';
       }
     };
 
@@ -956,11 +1072,20 @@
     // ==========================================
 
     // --- Fetch Products ---
+    let firstProductLoad = true;
     db.collection('produtos').onSnapshot((snapshot) => {
       productsList = [];
       snapshot.forEach(doc => {
         productsList.push({ id: doc.id, ...doc.data() });
       });
+      
+      // Auto-seed if collection is empty on first load
+      if (firstProductLoad && productsList.length === 0) {
+        firstProductLoad = false;
+        autoSeedProducts();
+        return;
+      }
+      firstProductLoad = false;
       renderProducts();
     });
 
@@ -971,17 +1096,24 @@
         return;
       }
       container.innerHTML = productsList.map(p => `
-        <div class="product-card" style="opacity: ${p.active ? '1' : '0.5'}">
-          <img src="${p.image}" alt="${p.name}">
-          <h3>${p.name}</h3>
-          <p style="font-size:0.8rem; color:var(--text-muted);">${p.description}</p>
-          <div style="font-size:0.8rem; margin: 10px 0;">
-            100g: ${formatCurrency(p.prices['100g'])}<br>
-            250g: ${formatCurrency(p.prices['250g'])}
+        <div class="product-card" style="opacity: ${p.active !== false ? '1' : '0.5'}">
+          <div class="prod-img-wrap">
+            <img src="${p.image}" alt="${p.name}" onerror="this.src='3.png'">
+            <span class="prod-status-tag ${p.active !== false ? 'prod-tag-active' : 'prod-tag-inactive'}">
+              ${p.active !== false ? '● Ativo' : '● Inativo'}
+            </span>
+          </div>
+          <div class="prod-body">
+            <h3>${p.name}</h3>
+            <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.4;">${p.description}</p>
+            <div class="prod-prices">
+              100g: ${formatCurrency(p.prices['100g'])} &nbsp;|&nbsp; 250g: ${formatCurrency(p.prices['250g'])}<br>
+              300g: ${formatCurrency(p.prices['300g'])} &nbsp;|&nbsp; 400g: ${formatCurrency(p.prices['400g'])}
+            </div>
           </div>
           <div class="product-actions">
             <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Editar</button>
-            <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️</button>
+            <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️ Excluir</button>
           </div>
         </div>
       `).join('');
@@ -993,12 +1125,17 @@
     window.openProductModal = () => {
       document.getElementById('product-form').reset();
       document.getElementById('prod-id').value = '';
+      document.getElementById('prod-current-image').value = '';
       document.getElementById('modal-title').textContent = 'Novo Produto';
+      document.getElementById('upload-preview').style.display = 'none';
+      document.getElementById('upload-label').innerHTML = '📷 <strong>Clique aqui</strong> ou arraste uma imagem<br><small>PNG, JPG ou WEBP — até 5MB</small>';
+      selectedImageFile = null;
       modal.classList.add('active');
     };
 
     window.closeProductModal = () => {
       modal.classList.remove('active');
+      selectedImageFile = null;
     };
 
     window.editProduct = (id) => {
@@ -1006,8 +1143,8 @@
       if (!p) return;
       
       document.getElementById('prod-id').value = p.id;
+      document.getElementById('prod-current-image').value = p.image;
       document.getElementById('prod-name').value = p.name;
-      document.getElementById('prod-image').value = p.image;
       document.getElementById('prod-tag').value = p.tag || '';
       document.getElementById('prod-desc').value = p.description;
       document.getElementById('prod-story').value = p.story;
@@ -1018,47 +1155,77 @@
       document.getElementById('price-400g').value = p.prices['400g'];
       document.getElementById('prod-active').checked = p.active !== false;
       
+      // Show current image
+      const preview = document.getElementById('upload-preview');
+      preview.src = p.image;
+      preview.style.display = 'block';
+      document.getElementById('upload-label').innerHTML = '📷 <strong>Imagem atual carregada</strong> — selecione outra para trocar';
+      selectedImageFile = null;
+      
       document.getElementById('modal-title').textContent = 'Editar Produto';
       modal.classList.add('active');
     };
 
     window.saveProduct = async (e) => {
       e.preventDefault();
-      const id = document.getElementById('prod-id').value;
-      const data = {
-        name: document.getElementById('prod-name').value,
-        image: document.getElementById('prod-image').value,
-        tag: document.getElementById('prod-tag').value,
-        description: document.getElementById('prod-desc').value,
-        story: document.getElementById('prod-story').value,
-        ingredients: document.getElementById('prod-ingredients').value.split(',').map(s => s.trim()),
-        prices: {
-          '100g': parseFloat(document.getElementById('price-100g').value),
-          '250g': parseFloat(document.getElementById('price-250g').value),
-          '300g': parseFloat(document.getElementById('price-300g').value),
-          '400g': parseFloat(document.getElementById('price-400g').value)
-        },
-        active: document.getElementById('prod-active').checked
-      };
-
+      const btn = document.getElementById('btn-save-product');
+      const originalText = btn.textContent;
+      btn.textContent = 'Salvando...';
+      btn.disabled = true;
+      
       try {
+        const id = document.getElementById('prod-id').value;
+        let imageUrl = document.getElementById('prod-current-image').value;
+        
+        // Use the compressed base64 image if a new one was selected
+        if (selectedImageFile) {
+          imageUrl = selectedImageFile; // Already a base64 data URL
+        }
+        
+        if (!imageUrl) {
+          alert('Por favor, selecione uma imagem para o produto.');
+          btn.textContent = originalText;
+          btn.disabled = false;
+          return;
+        }
+        
+        const data = {
+          name: document.getElementById('prod-name').value,
+          image: imageUrl,
+          tag: document.getElementById('prod-tag').value,
+          description: document.getElementById('prod-desc').value,
+          story: document.getElementById('prod-story').value,
+          ingredients: document.getElementById('prod-ingredients').value.split(',').map(s => s.trim()),
+          prices: {
+            '100g': parseFloat(document.getElementById('price-100g').value),
+            '250g': parseFloat(document.getElementById('price-250g').value),
+            '300g': parseFloat(document.getElementById('price-300g').value),
+            '400g': parseFloat(document.getElementById('price-400g').value)
+          },
+          active: document.getElementById('prod-active').checked
+        };
+
         if (id) {
           await db.collection('produtos').doc(id).update(data);
         } else {
           await db.collection('produtos').add(data);
         }
+        selectedImageFile = null;
         closeProductModal();
       } catch (err) {
-        alert("Erro ao salvar: " + err.message);
+        alert('Erro ao salvar: ' + err.message);
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
       }
     };
 
     window.deleteProduct = async (id) => {
-      if (confirm("Tem certeza que deseja excluir este produto permanentemente?")) {
+      if (confirm('Tem certeza que deseja excluir este produto permanentemente?')) {
         try {
           await db.collection('produtos').doc(id).delete();
         } catch (err) {
-          alert("Erro ao excluir: " + err.message);
+          alert('Erro ao excluir: ' + err.message);
         }
       }
     };
